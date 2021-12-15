@@ -1,2 +1,82 @@
-this is aws class
-if someone is lost, may he found himself, but not here
+provider "aws" {
+  region     = "us-east-1"
+  access_key = ""
+  secret_key = ""
+}
+resource "aws_subnet" "Public-subnet" {
+  vpc_id     = aws_vpc.my-first-vpc.id
+  cidr_block = "10.0.0.0/24"
+
+  tags = {
+    Name = "Dev-subnet"
+  }
+}
+resource "aws_vpc" "my-first-vpc" {
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "Dev"
+  }
+}
+resource "aws_internet_gateway" "New_IGW" {
+  vpc_id = aws_vpc.my-first-vpc.id
+  tags = {
+    Name = "this is an IGW"
+  }
+}
+resource "aws_route_table" "vpc_RT" {
+  vpc_id = aws_vpc.my-first-vpc.id
+}
+resource "aws_route_table_association" "RT_association" {
+  subnet_id      = aws_subnet.Public-subnet.id
+  route_table_id = aws_route_table.vpc_RT.id
+}
+resource "aws_route_table_association" "IGW-route" {
+  gateway_id     = aws_internet_gateway.New_IGW.id
+  route_table_id = aws_route_table.vpc_RT.id
+}
+resource "aws_subnet" "Private_subnet" {
+  vpc_id     = aws_vpc.my-first-vpc.id
+  cidr_block = "10.0.1.0/24"
+  tags = {
+    name = "Prod_sub"
+  }
+}
+resource "aws_instance" "app_server" {
+  ami           = "ami-0ed9277fb7eb570c9"
+  subnet_id     = aws_subnet.Private_subnet.id
+  instance_type = "t2.micro"
+  tags = {
+    name = "app_server"
+  }
+}
+resource "aws_instance" "web_server" {
+  ami           = "ami-0ed9277fb7eb570c9"
+  subnet_id     = aws_subnet.Public-subnet.id
+  instance_type = "t2.micro"
+  tags = {
+    name = "web_server"
+  }
+}
+resource "aws_security_group" "allow_ssh" {
+  name        = "allow_ssh"
+  description = "This SG allow ssh traffic for Public-sub"
+  vpc_id      = aws_vpc.my-first-vpc.id
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  tags = {
+    name = "Allow_SSH"
+  }
+}
+resource "aws_key_pair" "Dev_key" {
+  key_name   = "public-key"
+  public_key = "ssh-rsa s3eg3D99MCcn8g1DXjo8oj4yn67xXWoGMs1a2/HLUUw mauri@Maurice-Kapo"
+}
+# resource "provider" "name" {
+#  config options.....
+#  key = "value"
+#  key2 = "another value" 
+# }
